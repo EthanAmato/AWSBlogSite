@@ -9,6 +9,7 @@ import {
   Card,
 } from "@aws-amplify/ui-react";
 
+//inversion of control a signOut method that logs users out
 function App({ signOut }) {
   return (
     <View className="App">
@@ -21,4 +22,5 @@ function App({ signOut }) {
   );
 }
 
+//Means we have to log in to access this page
 export default withAuthenticator(App);

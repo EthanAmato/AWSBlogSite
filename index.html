@@ -8,6 +8,15 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Need this for aws amplify to not give error...idk
+      // https://github.com/aws-amplify/amplify-js/issues/7499#issuecomment-804386820
+      const isBrowser = () => typeof window !== 'undefined';
+      const isGlobal = () => typeof global !== 'undefined';
+      var exports = {};
+      if (!isGlobal() && isBrowser()) {
+        var global = window;
+      }
+    </script>    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

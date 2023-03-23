@@ -8,16 +8,18 @@ import {
   Image,
   Text,
   TextField,
+  Link as AmplifyLink,
+
   View,
   withAuthenticator,
 } from '@aws-amplify/ui-react';
-import { listNotes } from "./graphql/queries";
+import { listNotes } from "../graphql/queries";
 import {
   createNote as createNoteMutation,
   deleteNote as deleteNoteMutation,
-} from "./graphql/mutations";
-
-const App = ({ signOut }) => {
+} from "../graphql/mutations";
+import { Link } from "react-router-dom";
+const Notes = ({ signOut }) => {
   const [notes, setNotes] = useState([]);
 
   useEffect(() => {
@@ -69,7 +71,10 @@ const App = ({ signOut }) => {
 
   return (
     <View className="App">
-      <Heading level={1}>Notable</Heading>
+      <Flex alignItems={"center"} justifyContent={"space-between"}>
+        <Heading level={1} marginLeft={"5%"}>Notable</Heading>
+        <Link to={"/"} onClick={signOut} style={{ textDecoration: "none", marginRight: "5%"}}><AmplifyLink fontSize={"2em"} alignSelf={"flex-end"}>Logout</AmplifyLink></Link>
+      </Flex>
       <View as="form" margin="3rem 0" onSubmit={createNote}>
         <Flex direction="row" justifyContent="center">
           <TextField
@@ -99,7 +104,7 @@ const App = ({ signOut }) => {
           </Button>
         </Flex>
       </View>
-      <Heading level={2}>Current Notes</Heading>
+      <Heading level={2} marginLeft={"5%"}>Current Notes</Heading>
       <View margin="3rem 0">
         {notes.map((note) => (
           <Flex
@@ -125,9 +130,8 @@ const App = ({ signOut }) => {
           </Flex>
         ))}
       </View>
-      <Button onClick={signOut}>Sign Out</Button>
     </View>
   );
 };
 
-export default withAuthenticator(App);
+export default withAuthenticator(Notes);

@@ -1,26 +1,133 @@
+import React, { useState, useEffect } from "react";
 import "@aws-amplify/ui-react/styles.css";
-import logo from './assets/react.svg'
+import { API, Storage } from 'aws-amplify';
 import {
-  withAuthenticator,
   Button,
+  Flex,
   Heading,
   Image,
+  Text,
+  TextField,
   View,
-  Card,
-} from "@aws-amplify/ui-react";
+  withAuthenticator,
+} from '@aws-amplify/ui-react';
+import { listNotes } from "./graphql/queries";
+import {
+  createNote as createNoteMutation,
+  deleteNote as deleteNoteMutation,
+} from "./graphql/mutations";
 
-//inversion of control a signOut method that logs users out
-function App({ signOut }) {
+const App = ({ signOut }) => {
+  const [notes, setNotes] = useState([]);
+
+  useEffect(() => {
+    fetchNotes();
+  }, []);
+
+  async function fetchNotes() {
+    const apiData = await API.graphql({ query: listNotes });
+    const notesFromAPI = apiData.data.listNotes.items;
+    await Promise.all(
+      notesFromAPI.map(async (note) => {
+        if (note.image) {
+          const url = await Storage.get(note.title);
+          note.image = url;
+        }
+        return note;
+      })
+    );
+    setNotes(notesFromAPI);
+  }
+
+  async function createNote(event) {
+    event.preventDefault();
+    const form = new FormData(event.target);
+    const image = form.get("image");
+    const data = {
+      title: form.get("title"),
+      content: form.get("content"),
+      image: image.name,
+    };
+    if (!!data.image) await Storage.put(data.title, image);
+    await API.graphql({
+      query: createNoteMutation,
+      variables: { input: data },
+    });
+    fetchNotes();
+    event.target.reset();
+  }
+
+  async function deleteNote({ id, title }) {
+    const newNotes = notes.filter((note) => note.id !== id);
+    setNotes(newNotes);
+    await Storage.remove(title);
+    await API.graphql({
+      query: deleteNoteMutation,
+      variables: { input: { id } },
+    });
+  }
+
   return (
     <View className="App">
-      <Card>
-        <Image src={logo} className="App-logo" alt="logo" />
-        <Heading level={1}>We now have Auth!</Heading>
-      </Card>
+      <Heading level={1}>Notable</Heading>
+      <View as="form" margin="3rem 0" onSubmit={createNote}>
+        <Flex direction="row" justifyContent="center">
+          <TextField
+            name="title"
+            placeholder="Note Title"
+            label="Note Title"
+            labelHidden
+            variation="quiet"
+            required
+          />
+          <TextField
+            name="content"
+            placeholder="Note Content"
+            label="Note Content"
+            labelHidden
+            variation="quiet"
+            required
+          />
+          <View
+            name="image"
+            as="input"
+            type="file"
+            style={{ alignSelf: "end" }}
+          />
+          <Button type="submit" variation="primary">
+            Create Note
+          </Button>
+        </Flex>
+      </View>
+      <Heading level={2}>Current Notes</Heading>
+      <View margin="3rem 0">
+        {notes.map((note) => (
+          <Flex
+            key={note.id || note.title}
+            direction="column"
+            justifyContent="center"
+            alignItems="center"
+          >
+            <Text as="strong" fontWeight={700}>
+              {note.title}
+            </Text>
+            {note.image && (
+              <Image
+                src={note.image}
+                alt={`visual aid for ${note.title}`}
+                style={{ width: 400 }}
+              />
+            )}
+            <Text as="span">{note.content}</Text>
+            <Button variation="link" onClick={() => deleteNote(note)}>
+              Delete note
+            </Button>
+          </Flex>
+        ))}
+      </View>
       <Button onClick={signOut}>Sign Out</Button>
     </View>
   );
-}
+};
 
-//Means we have to log in to access this page
 export default withAuthenticator(App);
